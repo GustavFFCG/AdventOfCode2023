@@ -8,6 +8,7 @@ open FSharpPlus
 
 
 type Card = {
+    CardNo: int
     Winning: Set<int>
     Mine: Set<int>
 }
@@ -19,12 +20,13 @@ let fileName =
     | _ -> None
 
 let parseInput (str: string) =
-    let _idstr, winningstr, mineStr =
+    let idstr, winningstr, mineStr =
         String.split([|": "; " | "|]) str |> List.ofSeq
         |> function
             | [s1;s2;s3] -> s1, s2, s3
             | other  -> failwith "other"
     {
+        CardNo = idstr.Substring(4) |> Int32.Parse
         Winning = 
             winningstr |> String.split ([|"  "; " "|])
             |> Seq.where (fun s -> s <> "" )
@@ -55,8 +57,21 @@ let part1 (input:Card seq) =
     )
     |> sprintf "%i"
 
-let part2 (input:Card seq) = 
-    "todo"
+let part2 (input:Card seq) =
+    let scores = 
+        input
+        |>> (fun c ->
+            c.CardNo,
+            Set.intersect c.Winning c.Mine
+            |> Set.count
+        )
+        |> Map.ofSeq
+    input
+    |> Seq.sumBy ( fun c ->
+        scores[c.CardNo]
+        |> function
+            |0 ->
+    )
 
 module Tests =
     let private tests = 
