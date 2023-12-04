@@ -7,83 +7,93 @@ open Microsoft.FSharp.Collections
 open FSharpPlus
 
 
-type Card = {
-    CardNo: int
-    Winning: Set<int>
-    Mine: Set<int>
-}
-let fileName = 
-    fsi.CommandLineArgs 
+type Card =
+    { CardNo: int
+      Winning: Set<int>
+      Mine: Set<int> }
+
+let fileName =
+    fsi.CommandLineArgs
     |> List.ofArray
-    |> function 
-    | _::s::_ -> Some s 
-    | _ -> None
+    |> function
+        | _ :: s :: _ -> Some s
+        | _ -> None
 
 let parseInput (str: string) =
     let idstr, winningstr, mineStr =
-        String.split([|": "; " | "|]) str |> List.ofSeq
+        String.split ([| ": "; " | " |]) str
+        |> List.ofSeq
         |> function
-            | [s1;s2;s3] -> s1, s2, s3
-            | other  -> failwith "other"
-    {
-        CardNo = idstr.Substring(4) |> Int32.Parse
-        Winning = 
-            winningstr |> String.split ([|"  "; " "|])
-            |> Seq.where (fun s -> s <> "" )
-            |>> Int32.Parse
-            |> Set.ofSeq
-        Mine = 
-            mineStr |> String.split ([|"  "; " "|])
-            |> Seq.where (fun s -> s <> "" )
-            |>> Int32.Parse
-            |> Set.ofSeq
-    }
+            | [ s1; s2; s3 ] -> s1, s2, s3
+            | other -> failwith "other"
+
+    { CardNo = idstr.Substring(4) |> Int32.Parse
+      Winning =
+        winningstr
+        |> String.split ([| "  "; " " |])
+        |> Seq.where (fun s -> s <> "")
+        |>> Int32.Parse
+        |> Set.ofSeq
+      Mine =
+        mineStr
+        |> String.split ([| "  "; " " |])
+        |> Seq.where (fun s -> s <> "")
+        |>> Int32.Parse
+        |> Set.ofSeq }
+
 let readFile fileName =
     try
-        File.ReadLines fileName
-        |>> parseInput
-        |> Ok
+        File.ReadLines fileName |>> parseInput |> Ok
     with
-        ex -> Error $"Could not read file '%s{fileName}': %s{ex.Message}" 
+    | ex -> Error $"Could not read file '%s{fileName}': %s{ex.Message}"
 
-let part1 (input:Card seq) =
+let part1 (input: Card seq) =
     input
-    |> Seq.sumBy (fun c -> 
+    |> Seq.sumBy (fun c ->
         Set.intersect c.Winning c.Mine
         |> Set.count
         |> function
             | 0 -> 0
-            | i -> pown 2 (i - 1)
-    )
+            | i -> pown 2 (i - 1))
     |> sprintf "%i"
 
-let part2 (input:Card seq) =
-    let scores = 
-        input
-        |>> (fun c ->
-            c.CardNo,
-            Set.intersect c.Winning c.Mine
-            |> Set.count
-        )
-        |> Map.ofSeq
+let part2 (input: Card seq) =
+    let cardScore c  =
+        Set.intersect c.Winning c.Mine |> Set.count
+
     input
-    |> Seq.sumBy ( fun c ->
-        scores[c.CardNo]
-        |> function
-            |0 ->
-    )
+    |> Seq.rev
+    |> Seq.fold
+        (fun acc c ->
+            cardScore c
+            |> function
+                | 0 -> acc |> Map.add c.CardNo 1
+                | n ->
+                    let value =
+                        seq { c.CardNo + 1 .. c.CardNo + n }
+                        |> Seq.where (fun x -> Map.containsKey x acc )
+                        |> Seq.sumBy (fun x -> acc[x])
+                    acc |> Map.add c.CardNo (1 + value)
+
+        )
+        Map.empty
+    |> Map.values
+    |> Seq.sum
+    |> sprintf "%i"
 
 module Tests =
-    let private tests = 
+    let private tests =
         [
-            //fun () -> Error "todo"
+        //fun () -> Error "todo"
         ]
+
     let run () =
-        tests 
-        |> List.fold (fun state test -> state |> Result.bind test ) (Ok ())
+        tests
+        |> List.fold (fun state test -> state |> Result.bind test) (Ok())
         |>> fun () -> "All tests Ok"
 
 let input = fileName |>> readFile
+
 match input with
 | Some input ->
     Result.map3
@@ -91,9 +101,8 @@ match input with
         (Tests.run ())
         (input |>> part1)
         (input |>> part2)
-| None ->
-    Tests.run () |>> sprintf "Tests only:\r\n %s"
+| None -> Tests.run () |>> sprintf "Tests only:\r\n %s"
 |> function
-| Ok s -> s
-| Error s -> sprintf "Error: %s" s 
-|> Console.WriteLine 
+    | Ok s -> s
+    | Error s -> sprintf "Error: %s" s
+|> Console.WriteLine
