@@ -95,7 +95,7 @@ let part1 input =
     |> sprintf "%i"
 
 let part2 (input: Input) =
-    let mapRanges (inputRange: (int64*int64)) (mappings: Mapping seq) : (int64*int64) seq =
+    let mapRanges (mappings: Mapping seq) (inputRange: (int64*int64)) : (int64*int64) seq =
         let relevantMappings = 
             mappings
             |> Seq.filter (fun m -> (snd inputRange) <= m.SourceStart  && (fst inputRange) < m.SourceStart + m.Range)
@@ -103,23 +103,37 @@ let part2 (input: Input) =
         
         relevantMappings
         |> Seq.fold 
-            //( fun ((acc: (int64*int64) seq), (rangeLeft: (int64*int64))) m -> 
-            ( fun acc m -> 
+            ( fun (acc, rangeLeft) m -> 
                 rangeLeft
-                |> fun (start, stop) ->
-                    let beforeRange =
-                        if start > m.SourceStart then Some (start, m.SourceStart - 1) else None
-                    let midRange =
-                        (Math.Max (start, m.SourceStart), Math.Min (stop, m.SourceStart + m.Range - 1))
-                    let afterRange =
-                        if stop <= m.SourceStart + m.Range then Some (m.SourceStart + m.Range) else None
-                    beforeRange |> function
-                    | Some r -> ([|r;midRange|], rangeLeft)
-                    | None -> ([|midRange|], rangeLeft)
-                |> fun x -> x
+                |> function
+                    | Some (start, stop) ->
+                        let beforeRange =
+                            if start > m.SourceStart then Some (start, m.SourceStart - 1L) else None
+                        let midRange =
+                            (Math.Max (start, m.SourceStart), Math.Min (stop, m.SourceStart + m.Range - 1))
+                        let afterRange =
+                            if stop <= m.SourceStart + m.Range then Some (m.SourceStart + m.Range) else None
+                        beforeRange |> function
+                        | Some r -> ([r;midRange], rangeLeft)
+                        | None -> ([midRange], rangeLeft)
+                    | None -> (acc, None)
             )
-            ([| inputRange |], Some inputRange)
-    "todo"
+            ([ inputRange ], Some inputRange)
+        |> function | (acc, Some r) -> r::acc | (acc, None) -> acc
+    input.Seeds
+    |> Seq.chunkBySize 2
+    |>> List.ofArray
+    |>> (function | [a; b] -> (a, b) | _ -> failwith "not even number")
+    >== (mapRanges input.SeedToSoil)
+    >== (mapRanges input.SoilToFertilizer)
+    >== (mapRanges input.FertilizserToWater)
+    >== (mapRanges input.WaterToLight)
+    >== (mapRanges input.LightToTemperature)
+    >== (mapRanges input.TemperatureToHumidity)
+    >== (mapRanges input.HumidityToLocation)
+    |>> fst
+    |>> Seq.min
+    |> sprintf "%i"
 
 module Tests =
     let private tests = 
