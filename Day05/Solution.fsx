@@ -110,7 +110,7 @@ let part2 (input: Input) =
                         let beforeRange =
                             if start > m.SourceStart then Some (start, m.SourceStart - 1L) else None
                         let midRange =
-                            (Math.Max (start, m.SourceStart), Math.Min (stop, m.SourceStart + m.Range - 1))
+                            (Math.Max (start, m.SourceStart), Math.Min (stop, m.SourceStart + m.Range - 1L))
                         let afterRange =
                             if stop <= m.SourceStart + m.Range then Some (m.SourceStart + m.Range) else None
                         beforeRange |> function
