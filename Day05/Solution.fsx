@@ -15,7 +15,7 @@ let fileName =
 
 type Mapping = {
     DestStart: Int64
-    TargetStart: Int64
+    SourceStart: Int64
     Range: Int64
 }
 type Input = {
@@ -48,10 +48,10 @@ let ParseInput (input:string seq) =
         mapping
         |>> fun s -> s |> String.split [|" "|] |>> Int64.Parse |> List.ofSeq
         |>> function
-        | [destStart;targetStart;range] ->
+        | [destStart;sourceStart;range] ->
             {
                 DestStart = destStart
-                TargetStart = targetStart
+                SourceStart = sourceStart
                 Range = range
             }
         | other -> failwith $"unexpected input {other}"
@@ -75,7 +75,24 @@ let readFile fileName =
         ex -> Error $"Could not read file '%s{fileName}': %s{ex.Message}" 
 
 let part1 input =
-    $"todo: planting {Seq.length input.Seeds} seeds "
+    let mapBy (mappings: Mapping seq) source =
+        mappings
+        |> Seq.tryFind (fun m -> 
+            source >= m.SourceStart
+            && source < m.SourceStart + m.Range)
+        |>> (fun m -> m.DestStart + source - m.SourceStart)
+        |> Option.defaultValue source
+
+    input.Seeds
+    |>> mapBy input.SeedToSoil
+    |>> mapBy input.SoilToFertilizer
+    |>> mapBy input.FertilizserToWater
+    |>> mapBy input.WaterToLight
+    |>> mapBy input.LightToTemperature
+    |>> mapBy input.TemperatureToHumidity
+    |>> mapBy input.HumidityToLocation
+    |> Seq.min
+    |> sprintf "%i"
 
 let part2 input = 
     "todo"
