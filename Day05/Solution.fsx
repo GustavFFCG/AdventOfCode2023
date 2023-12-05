@@ -94,36 +94,43 @@ let part1 input =
     |> Seq.min
     |> sprintf "%i"
 
+let mapRanges (mappings: Mapping seq) (inputRange: (int64*int64)) : (int64*int64) seq =
+    let relevantMappings = 
+        mappings
+        |> Seq.filter (fun m -> 
+            (snd inputRange) >= m.SourceStart  && (fst inputRange) < m.SourceStart + m.Range)
+        |> Seq.sortBy (fun m -> m.SourceStart)
+
+    //Console.WriteLine($"{Seq.length relevantMappings} relevant mappings" )        
+
+    relevantMappings
+    |> Seq.fold 
+        ( fun (acc, rangeLeft) m ->
+            //Console.WriteLine($"Folding {acc} {rangeLeft} {m}" )
+            rangeLeft
+            |> function
+                | Some (start, stop) ->
+                    let beforeRange =
+                        if start < m.SourceStart then Some (start, m.SourceStart - 1L) else None
+                    let midRange =
+                        (Math.Max (start, m.SourceStart) + m.DestStart - m.SourceStart, Math.Min (stop, m.SourceStart + m.Range - 1L) + m.DestStart - m.SourceStart)
+                    let afterRange =
+                        if stop >= m.SourceStart + m.Range then Some (m.SourceStart + m.Range, stop) else None
+
+                    //Console.WriteLine($"before {beforeRange}, mid {midRange} after {afterRange}")
+                    beforeRange |> function
+                    | Some r -> (r::midRange::acc, afterRange)
+                    | None -> (midRange::acc, afterRange)
+                | None -> (acc, None)
+        )
+        ([ ], Some inputRange)
+    |> function | (acc, Some r) -> r::acc | (acc, None) -> acc
+
 let part2 (input: Input) =
-    let mapRanges (mappings: Mapping seq) (inputRange: (int64*int64)) : (int64*int64) seq =
-        let relevantMappings = 
-            mappings
-            |> Seq.filter (fun m -> (snd inputRange) <= m.SourceStart  && (fst inputRange) < m.SourceStart + m.Range)
-            |> Seq.sortBy (fun m -> m.SourceStart)
-        
-        relevantMappings
-        |> Seq.fold 
-            ( fun (acc, rangeLeft) m -> 
-                rangeLeft
-                |> function
-                    | Some (start, stop) ->
-                        let beforeRange =
-                            if start > m.SourceStart then Some (start, m.SourceStart - 1L) else None
-                        let midRange =
-                            (Math.Max (start, m.SourceStart), Math.Min (stop, m.SourceStart + m.Range - 1L))
-                        let afterRange =
-                            if stop <= m.SourceStart + m.Range then Some (m.SourceStart + m.Range) else None
-                        beforeRange |> function
-                        | Some r -> ([r;midRange], rangeLeft)
-                        | None -> ([midRange], rangeLeft)
-                    | None -> (acc, None)
-            )
-            ([ inputRange ], Some inputRange)
-        |> function | (acc, Some r) -> r::acc | (acc, None) -> acc
     input.Seeds
     |> Seq.chunkBySize 2
     |>> List.ofArray
-    |>> (function | [a; b] -> (a, b) | _ -> failwith "not even number")
+    |>> (function | [a; b] -> (a, a + b - 1L) | _ -> failwith "not even number")
     >>= (mapRanges input.SeedToSoil)
     >>= (mapRanges input.SoilToFertilizer)
     >>= (mapRanges input.FertilizserToWater)
@@ -132,13 +139,30 @@ let part2 (input: Input) =
     >>= (mapRanges input.TemperatureToHumidity)
     >>= (mapRanges input.HumidityToLocation)
     |>> fst
-    |>> Seq.min
+    |> Seq.min
     |> sprintf "%i"
 
 module Tests =
     let private tests = 
         [
-            //fun () -> Error "todo"
+            fun () -> 
+                mapRanges 
+                    [| {SourceStart = 10L; Range = 2L; DestStart = 20L}|]
+                    (9L,15L)
+                |> List.ofSeq
+                |> List.sortBy fst
+                |> function
+                    | [(9L,9L);(12L,15L);(20L,21L)] -> Ok ()
+                    | other -> Error $"{other}"
+            fun () -> 
+                mapRanges 
+                    [| {SourceStart = 10L; Range = 6L; DestStart = 20L}|]
+                    (11L,12L)
+                |> List.ofSeq
+                |> List.sortBy fst
+                |> function
+                    | [(21L,22L)] -> Ok ()
+                    | other -> Error $"{other}"
         ]
     let run () =
         tests 
