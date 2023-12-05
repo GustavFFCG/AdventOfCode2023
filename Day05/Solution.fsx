@@ -124,13 +124,13 @@ let part2 (input: Input) =
     |> Seq.chunkBySize 2
     |>> List.ofArray
     |>> (function | [a; b] -> (a, b) | _ -> failwith "not even number")
-    >== (mapRanges input.SeedToSoil)
-    >== (mapRanges input.SoilToFertilizer)
-    >== (mapRanges input.FertilizserToWater)
-    >== (mapRanges input.WaterToLight)
-    >== (mapRanges input.LightToTemperature)
-    >== (mapRanges input.TemperatureToHumidity)
-    >== (mapRanges input.HumidityToLocation)
+    >>= (mapRanges input.SeedToSoil)
+    >>= (mapRanges input.SoilToFertilizer)
+    >>= (mapRanges input.FertilizserToWater)
+    >>= (mapRanges input.WaterToLight)
+    >>= (mapRanges input.LightToTemperature)
+    >>= (mapRanges input.TemperatureToHumidity)
+    >>= (mapRanges input.HumidityToLocation)
     |>> fst
     |>> Seq.min
     |> sprintf "%i"
