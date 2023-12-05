@@ -94,7 +94,31 @@ let part1 input =
     |> Seq.min
     |> sprintf "%i"
 
-let part2 input = 
+let part2 (input: Input) =
+    let mapRanges (inputRange: (int64*int64)) (mappings: Mapping seq) : (int64*int64) seq =
+        let relevantMappings = 
+            mappings
+            |> Seq.filter (fun m -> (snd inputRange) <= m.SourceStart  && (fst inputRange) < m.SourceStart + m.Range)
+            |> Seq.sortBy (fun m -> m.SourceStart)
+        
+        relevantMappings
+        |> Seq.fold 
+            //( fun ((acc: (int64*int64) seq), (rangeLeft: (int64*int64))) m -> 
+            ( fun acc m -> 
+                rangeLeft
+                |> fun (start, stop) ->
+                    let beforeRange =
+                        if start > m.SourceStart then Some (start, m.SourceStart - 1) else None
+                    let midRange =
+                        (Math.Max (start, m.SourceStart), Math.Min (stop, m.SourceStart + m.Range - 1))
+                    let afterRange =
+                        if stop <= m.SourceStart + m.Range then Some (m.SourceStart + m.Range) else None
+                    beforeRange |> function
+                    | Some r -> ([|r;midRange|], rangeLeft)
+                    | None -> ([|midRange|], rangeLeft)
+                |> fun x -> x
+            )
+            ([| inputRange |], Some inputRange)
     "todo"
 
 module Tests =
