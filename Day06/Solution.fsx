@@ -14,15 +14,15 @@ let fileName =
     | _ -> None
 
 type Input = {
-    Time: int
-    Distance: int
+    Time: int64
+    Distance: int64
 }
 
 let parseInput (input:string seq) =
     input
     |>> (String.split [|":"|] >> Seq.tail >> Seq.head)
     |>> String.split [|" "|]
-    |> Seq.map (Seq.where (fun s -> s <> "") >> Seq.map (fun s -> (Int32.Parse(s))))
+    |> Seq.map (Seq.where (fun s -> s <> "") >> Seq.map (fun s -> (Int64.Parse(s))))
     |> List.ofSeq
     |> function
         | [timeRow;distRow] ->
@@ -31,22 +31,30 @@ let parseInput (input:string seq) =
             |> Seq.mapi (fun i t -> {Time = t; Distance = distList[i]})
         | _ -> failwith "unexpected input"
 
+let parseInput2 (input:string seq) =
+    input
+    |>> (String.split [|":"|] >> Seq.tail >> Seq.head)
+    |>> (String.replace " " "")
+    |>> Int64.Parse
+    |> List.ofSeq
+    |> function
+        | [time;dist] -> {Time = time; Distance = dist}
+        | _ -> failwith "unexpected input"
+
 let readFile fileName =
     try
         File.ReadLines fileName
-        |> parseInput
         |> Ok
     with
         ex -> Error $"Could not read file '%s{fileName}': %s{ex.Message}" 
 
-let distances (time: int): Int64 seq =
-    seq {1..time - 1}
-    |>> int64
+let distances time: Int64 seq =
+    seq {1L..time - 1L}
     |>> fun chargeTime -> chargeTime * (int64 time - chargeTime)
 
-let part1 (input: Input seq) =
-    Console.WriteLine ($"{Seq.length input} races")
+let part1 (input: string seq) =
     input
+    |> parseInput
     |>> (fun race ->
         distances race.Time
         |> Seq.where ((<) race.Distance)
@@ -55,8 +63,18 @@ let part1 (input: Input seq) =
     |> Seq.fold (*) 1L
     |> sprintf "%i"
 
-let part2 input = 
-    "todo"
+let part2 (input: string seq) =
+    let roots (x:Input) =
+        let sqrt = 
+            Math.Sqrt ((float (x.Time * x.Time)) / 4.0 - (float x.Distance))
+            |> int64
+        Console.WriteLine ($"x.TimeMid: {x.Time / 2L} sqrt: {sqrt}" )
+        (x.Time / 2L - sqrt), (x.Time / 2L + sqrt)
+    input
+    |> parseInput2
+    |> roots
+    |> fun (a, b) -> b - a + 1L
+    |> sprintf "%i"
 
 module Tests =
     let private tests = 
@@ -65,11 +83,6 @@ module Tests =
                 distances 7 |> List.ofSeq |> List.sort
                 |> function
                 | [6L;6L;10L;10L;12L;12L] -> Ok ()
-                | other -> Error $"{other}"
-            fun () -> 
-                [|2;3;2|] |> Seq.fold (*) 1
-                |> function
-                | 12 -> Ok ()
                 | other -> Error $"{other}"
         ]
     let run () =
