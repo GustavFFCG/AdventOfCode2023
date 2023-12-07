@@ -68,7 +68,6 @@ let part2 (input: string seq) =
         let sqrt = 
             Math.Sqrt ((float (x.Time * x.Time)) / 4.0 - (float x.Distance))
             |> int64
-        Console.WriteLine ($"x.TimeMid: {x.Time / 2L} sqrt: {sqrt}" )
         (x.Time / 2L - sqrt), (x.Time / 2L + sqrt)
     input
     |> parseInput2

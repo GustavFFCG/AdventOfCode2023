@@ -71,7 +71,6 @@ let scoreFunction (s:string) =
     handScore::cardScores
 
 let scoreFunction2 (s:string) =
-    //Console.WriteLine $"scoring {s}"
     let scoreCard = function
         | 'A' -> 13
         | 'K' -> 12
@@ -115,7 +114,6 @@ let scoreFunction2 (s:string) =
         | [1;1;1;1] -> 2
         | [1;1;1;1;1] -> 1
         | other -> failwith $"unhandled hand {other}"
-    //Console.WriteLine $"handScore {handScore}"
     handScore::cardScores
 
 let part1 (input: Input seq) =
