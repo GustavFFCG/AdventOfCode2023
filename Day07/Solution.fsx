@@ -36,30 +36,42 @@ let readFile fileName =
 
 let scoreFunction (s:string) =
     let scoreCard = function
-        | 'A' -> 1
-        | 'K' -> 2
-        | 'Q' -> 3
-        | 'J' -> 4
-        | 'T' -> 5
-        | '9' -> 6
+        | 'A' -> 13
+        | 'K' -> 12
+        | 'Q' -> 11
+        | 'J' -> 10
+        | 'T' -> 9
+        | '9' -> 8
         | '8' -> 7
-        | '7' -> 8
-        | '6' -> 9
-        | '5' -> 10
-        | '4' -> 11
-        | '3' -> 12
-        | '2' -> 13
+        | '7' -> 6
+        | '6' -> 5
+        | '5' -> 4
+        | '4' -> 3
+        | '3' -> 2
+        | '2' -> 1
         | _ -> failwith "unexpected card"
 
-    Console.WriteLine $"scoring {s}"
+    //Console.WriteLine $"scoring {s}"
     let chunks =
         s
+        |> Seq.sort
         |> Seq.chunkBy id
         |>> fun (c, a) -> scoreCard c, Seq.length a
-    //chunks
-    //|> Seq.iter (fun (c, a) -> Console.WriteLine ($"Chunk {c} length {a}"))
-    //"todo"
-
+        |> Seq.sortByDescending snd
+        |> List.ofSeq
+    let cardScores = s |> Seq.map scoreCard |> List.ofSeq
+    let handScore =
+        match chunks with
+        | [five] -> 7
+        | (_, 4)::_ -> 6
+        | [(_, 3);(_, 2)] -> 5
+        | (_, 3)::_ -> 4
+        | [(_, 2);(_, 2);(_,1)] -> 3
+        | (_, 2)::_ -> 2
+        | _ -> 1
+    //Console.WriteLine $"chunks {chunks}"
+    //Console.WriteLine $"handScore {handScore}"
+    handScore::cardScores
 
 let part1 (input: Input seq) =
     input
@@ -79,6 +91,12 @@ module Tests =
                 |> List.sortBy scoreFunction
                 |> function 
                     | ["433AQ";"23333"] -> Ok ()
+                    | other -> Error $"Got {other}"
+            fun () ->
+                ["32T3K";"T55J5";"KK677";"KTJJT";"QQQJA" ]
+                |> List.sortBy scoreFunction
+                |> function 
+                    | ["32T3K";"KTJJT";"KK677";"T55J5";"QQQJA" ] -> Ok ()
                     | other -> Error $"Got {other}"
         ]
     let run () =
