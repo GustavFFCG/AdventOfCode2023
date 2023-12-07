@@ -51,25 +51,70 @@ let scoreFunction (s:string) =
         | '2' -> 1
         | _ -> failwith "unexpected card"
 
-    //Console.WriteLine $"scoring {s}"
     let chunks =
         s
         |> Seq.sort
         |> Seq.chunkBy id
-        |>> fun (c, a) -> scoreCard c, Seq.length a
-        |> Seq.sortByDescending snd
+        |>> (fun (c, a) -> Seq.length a)
+        |> Seq.sortDescending
         |> List.ofSeq
     let cardScores = s |> Seq.map scoreCard |> List.ofSeq
     let handScore =
         match chunks with
         | [five] -> 7
-        | (_, 4)::_ -> 6
-        | [(_, 3);(_, 2)] -> 5
-        | (_, 3)::_ -> 4
-        | [(_, 2);(_, 2);(_,1)] -> 3
-        | (_, 2)::_ -> 2
+        | 4::_ -> 6
+        | [3;2] -> 5
+        | 3::_ -> 4
+        | [2;2;1] -> 3
+        | 2::_ -> 2
         | _ -> 1
-    //Console.WriteLine $"chunks {chunks}"
+    handScore::cardScores
+
+let scoreFunction2 (s:string) =
+    //Console.WriteLine $"scoring {s}"
+    let scoreCard = function
+        | 'A' -> 13
+        | 'K' -> 12
+        | 'Q' -> 11
+        | 'J' -> 0
+        | 'T' -> 9
+        | '9' -> 8
+        | '8' -> 7
+        | '7' -> 6
+        | '6' -> 5
+        | '5' -> 4
+        | '4' -> 3
+        | '3' -> 2
+        | '2' -> 1
+        | _ -> failwith "unexpected card"
+
+    let chunks =
+        s
+        |> String.replace "J" ""
+        |> Seq.sort
+        |> Seq.chunkBy id
+        |>> (fun (c, a) -> Seq.length a)
+        |> Seq.sortDescending
+        |> List.ofSeq
+    let cardScores = s |> Seq.map scoreCard |> List.ofSeq
+    let handScore =
+        match chunks with
+        | [_any] -> 7
+        | [] -> 7
+        | [4;1] -> 6
+        | [3;1] -> 6
+        | [2;1] -> 6
+        | [1;1] -> 6
+        | [3;2] -> 5
+        | [2;2] -> 5
+        | [3;1;1] -> 4
+        | [2;1;1] -> 4
+        | [1;1;1] -> 4
+        | [2;2;1] -> 3
+        | [2;1;1;1] -> 2
+        | [1;1;1;1] -> 2
+        | [1;1;1;1;1] -> 1
+        | other -> failwith $"unhandled hand {other}"
     //Console.WriteLine $"handScore {handScore}"
     handScore::cardScores
 
@@ -81,7 +126,11 @@ let part1 (input: Input seq) =
     |> sprintf "%i"
 
 let part2 input = 
-    "todo"
+    input
+    |> Seq.sortBy ((fun h -> h.Hand) >> scoreFunction2)
+    |> Seq.mapi (fun i hand -> (i + 1) * hand.Bid)
+    |> Seq.sum
+    |> sprintf "%i"
 
 module Tests =
     let private tests = 
@@ -97,6 +146,18 @@ module Tests =
                 |> List.sortBy scoreFunction
                 |> function 
                     | ["32T3K";"KTJJT";"KK677";"T55J5";"QQQJA" ] -> Ok ()
+                    | other -> Error $"Got {other}"
+            fun () ->
+                ["32T3K";"T55J5";"KK677";"KTJJT";"QQQJA" ]
+                |> List.sortBy scoreFunction2
+                |> function 
+                    | ["32T3K";"KK677";"T55J5";"QQQJA";"KTJJT" ] -> Ok ()
+                    | other -> Error $"Got {other}"
+            fun () ->
+                ["22222";"JJJJJ"]
+                |> List.sortBy scoreFunction2
+                |> function 
+                    | ["JJJJJ";"22222" ] -> Ok ()
                     | other -> Error $"Got {other}"
         ]
     let run () =
