@@ -37,36 +37,62 @@ type Direction =
     | Left
     | Right
 
-let part1 (input: Map<(int*int),char>) =
-    let canGo direction pos =
-        match direction with
-        | Up ->
-            Map.tryFind (fst pos, snd pos - 1) input
-            |>> fun c ->
-                Seq.contains input[pos] [|'|';'J';'L'|] &&
-                Seq.contains c [|'|';'7';'F'|]
-            |> Option.defaultValue false
-        | Down ->
-            Map.tryFind (fst pos, snd pos - 1) input
-            |>> fun c ->
-                Seq.contains input[pos] [|'|';'7';'F'|] &&
-                Seq.contains c [|'|';'J';'L'|]
-            |> Option.defaultValue false
-        | Left ->
-            Map.tryFind (fst pos, snd pos - 1) input
-            |>> fun c ->
-                Seq.contains input[pos] [|'-';'J';'7'|] &&
-                Seq.contains c [|'-';'L';'F'|]
-            |> Option.defaultValue false
-        | Right ->
-            Map.tryFind (fst pos, snd pos - 1) input
-            |>> fun c ->
-                Seq.contains input[pos] [|'-';'L';'F'|] &&
-                Seq.contains c [|'-';'J';'7'|]
-            |> Option.defaultValue false
+let step dir (pos: int*int) =
+    match dir with
+        | Up -> (fst pos, snd pos - 1)
+        | Down -> (fst pos, snd pos + 1)
+        | Left -> (fst pos - 1, snd pos)
+        | Right -> (fst pos + 1, snd pos)
 
+let part1 (input: Map<(int*int),char>) =
+    let canGo direction pos : (int*int) option =
+        let maybeStep = step direction pos
+        Map.tryFind maybeStep input
+        |> Option.map (fun c ->
+            match direction  with
+            | Up ->
+                Seq.contains input[pos] [|'S';'|';'J';'L'|] &&
+                Seq.contains c [|'S';'|';'7';'F'|]
+            | Down ->
+                Seq.contains input[pos] [|'S';'|';'7';'F'|] &&
+                Seq.contains c [|'S';'|';'J';'L'|]
+            | Left ->
+                Seq.contains input[pos] [|'S';'-';'J';'7'|] &&
+                Seq.contains c [|'S';'-';'L';'F'|]
+            | Right ->
+                Seq.contains input[pos] [|'S';'-';'L';'F'|] &&
+                Seq.contains c [|'S';'-';'J';'7'|])
+
+        |>> fun x -> (x, maybeStep)
+        >>= Option.ofPair
+
+    let possibleSteps pos =
+        [ Up;Down;Left;Right]
+        |> List.choose (fun d -> canGo d pos)
+        
     let startPos = input |> Map.findKey (fun _ c -> c = 'S' )
-    "todo"
+
+    let rec createpath pos prevPos path =
+        if Set.contains pos path then Some path
+        else
+            match prevPos with
+            | Some prevPos ->
+                possibleSteps pos
+                |> List.where (fun p -> p <> prevPos)
+                |> function
+                | [] -> None
+                | head::tail -> createpath head (Some pos) (Set.add pos path)
+            | None ->
+                possibleSteps pos
+                |> List.pick (fun next -> createpath next (Some pos) (Set.add pos path))
+                |> Some
+            
+    createpath startPos None Set.empty
+    |>> Set.count
+    |>> fun count -> count / 2
+    |>> sprintf "%i"
+    |> Option.defaultValue "No paths found" 
+
 let part2 input = 
     "todo"
 
