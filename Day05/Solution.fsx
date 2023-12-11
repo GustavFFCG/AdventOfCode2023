@@ -101,12 +101,10 @@ let mapRanges (mappings: Mapping seq) (inputRange: (int64*int64)) : (int64*int64
             (snd inputRange) >= m.SourceStart  && (fst inputRange) < m.SourceStart + m.Range)
         |> Seq.sortBy (fun m -> m.SourceStart)
 
-    //Console.WriteLine($"{Seq.length relevantMappings} relevant mappings" )        
 
     relevantMappings
     |> Seq.fold 
         ( fun (acc, rangeLeft) m ->
-            //Console.WriteLine($"Folding {acc} {rangeLeft} {m}" )
             rangeLeft
             |> function
                 | Some (start, stop) ->
@@ -117,7 +115,6 @@ let mapRanges (mappings: Mapping seq) (inputRange: (int64*int64)) : (int64*int64
                     let afterRange =
                         if stop >= m.SourceStart + m.Range then Some (m.SourceStart + m.Range, stop) else None
 
-                    //Console.WriteLine($"before {beforeRange}, mid {midRange} after {afterRange}")
                     beforeRange |> function
                     | Some r -> (r::midRange::acc, afterRange)
                     | None -> (midRange::acc, afterRange)

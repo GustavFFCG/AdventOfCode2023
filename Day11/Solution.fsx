@@ -30,15 +30,23 @@ let readFile fileName =
     with
         ex -> Error $"Could not read file '%s{fileName}': %s{ex.Message}" 
 
-let part1 (input: (int*int) seq) =
-    let rec distances acc (points:(int*int) seq) =
-        if Seq.length points <= 1 then acc
-        else 
-            let (originX, originY) = Seq.head points
-            points
-            |> Seq.tail
+let rec distances (points:(int*int) list) =
+    match points with
+        | [] -> 0
+        | (originX, originY)::tail ->
+            tail
             |> Seq.sumBy (fun (x, y) -> abs(x - originX) + abs(y - originY))
-            |> (+) acc
+            |> (+) (distances tail)
+
+let rec distances64 (points:(int64*int64) list) =
+    match points with
+        | [] -> 0L
+        | (originX, originY)::tail ->
+            tail
+            |> Seq.sumBy (fun (x, y) -> abs(x - originX) + abs(y - originY))
+            |> (+) (distances64 tail)
+
+let part1 (input: (int*int) seq) =
     let blankRows =
         input
         |>> snd
@@ -50,22 +58,47 @@ let part1 (input: (int*int) seq) =
         |> fun x -> seq{(Seq.min x + 1)..(Seq.max x - 1)}
         |> Seq.where (fun col -> input |> Seq.exists (fun (x,_y) -> x = col) |> not)
     
-    Console.WriteLine $"{Seq.length blankRows} blank rows, {Seq.length blankCols} blank cols"
     input
     |>> (fun (x, y) -> 
         (blankCols |> Seq.where(fun col -> col < x) |> Seq.length) + x,
         (blankRows |> Seq.where(fun row -> row < y) |> Seq.length) + y
         )
-    |> distances 0
+    |> List.ofSeq
+    |> distances
     |> sprintf "%i"
 
-let part2 input = 
-    "todo"
+let part2 (input: (int*int) seq) =
+    let blankRows =
+        input
+        |>> snd
+        |> fun y -> seq{(Seq.min y + 1)..(Seq.max y - 1)}
+        |> Seq.where (fun row -> input |> Seq.exists (fun (_x,y) -> y = row) |> not)
+    let blankCols =
+        input
+        |>> fst
+        |> fun x -> seq{(Seq.min x + 1)..(Seq.max x - 1)}
+        |> Seq.where (fun col -> input |> Seq.exists (fun (x,_y) -> x = col) |> not)
+    
+    input
+    |>> (fun (x, y) -> 
+        (blankCols |> Seq.where(fun col -> col < x) |> Seq.length) + (x * 1000000) |> int64,
+        (blankRows |> Seq.where(fun row -> row < y) |> Seq.length) + (y * 1000000) |> int64
+        )
+    |> List.ofSeq
+    |> distances64
+    |> sprintf "%i"
 
 module Tests =
     let private tests = 
         [
-            //fun () -> Error "todo"
+            fun () -> 
+                [(1,2);(3,1)]
+                |> distances
+                |> function | 3 -> Ok () | other -> Error $"Expected 3 got {other}"
+            fun () -> 
+                [(1,2);(3,1);(0,0)]
+                |> distances
+                |> function | 10 -> Ok () | other -> Error $"Expected 10 got {other}"
         ]
     let run () =
         tests 
