@@ -31,9 +31,42 @@ let readFile fileName =
     with
         ex -> Error $"Could not read file '%s{fileName}': %s{ex.Message}" 
 
+type Direction =
+    | Up
+    | Down
+    | Left
+    | Right
+
 let part1 (input: Map<(int*int),char>) =
-    let startPos = input |> Map.
-    "too"
+    let canGo direction pos =
+        match direction with
+        | Up ->
+            Map.tryFind (fst pos, snd pos - 1) input
+            |>> fun c ->
+                Seq.contains input[pos] [|'|';'J';'L'|] &&
+                Seq.contains c [|'|';'7';'F'|]
+            |> Option.defaultValue false
+        | Down ->
+            Map.tryFind (fst pos, snd pos - 1) input
+            |>> fun c ->
+                Seq.contains input[pos] [|'|';'7';'F'|] &&
+                Seq.contains c [|'|';'J';'L'|]
+            |> Option.defaultValue false
+        | Left ->
+            Map.tryFind (fst pos, snd pos - 1) input
+            |>> fun c ->
+                Seq.contains input[pos] [|'-';'J';'7'|] &&
+                Seq.contains c [|'-';'L';'F'|]
+            |> Option.defaultValue false
+        | Right ->
+            Map.tryFind (fst pos, snd pos - 1) input
+            |>> fun c ->
+                Seq.contains input[pos] [|'-';'L';'F'|] &&
+                Seq.contains c [|'-';'J';'7'|]
+            |> Option.defaultValue false
+
+    let startPos = input |> Map.findKey (fun _ c -> c = 'S' )
+    "todo"
 let part2 input = 
     "todo"
 
