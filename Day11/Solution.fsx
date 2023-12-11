@@ -30,21 +30,13 @@ let readFile fileName =
     with
         ex -> Error $"Could not read file '%s{fileName}': %s{ex.Message}" 
 
-let rec distances (points:(int*int) list) =
-    match points with
-        | [] -> 0
-        | (originX, originY)::tail ->
-            tail
-            |> Seq.sumBy (fun (x, y) -> abs(x - originX) + abs(y - originY))
-            |> (+) (distances tail)
-
-let rec distances64 (points:(int64*int64) list) =
+let rec distances points =
     match points with
         | [] -> 0L
         | (originX, originY)::tail ->
             tail
             |> Seq.sumBy (fun (x, y) -> abs(x - originX) + abs(y - originY))
-            |> (+) (distances64 tail)
+            |> (+) (distances tail)
 
 let part1 (input: (int*int) seq) =
     let blankRows =
@@ -60,8 +52,8 @@ let part1 (input: (int*int) seq) =
     
     input
     |>> (fun (x, y) -> 
-        (blankCols |> Seq.where(fun col -> col < x) |> Seq.length) + x,
-        (blankRows |> Seq.where(fun row -> row < y) |> Seq.length) + y
+        (blankCols |> Seq.where(fun col -> col < x) |> Seq.length) + x |> int64,
+        (blankRows |> Seq.where(fun row -> row < y) |> Seq.length) + y |> int64
         )
     |> List.ofSeq
     |> distances
@@ -81,24 +73,23 @@ let part2 (input: (int*int) seq) =
     
     input
     |>> (fun (x, y) -> 
-        (blankCols |> Seq.where(fun col -> col < x) |> Seq.length) + (x * 1000000) |> int64,
-        (blankRows |> Seq.where(fun row -> row < y) |> Seq.length) + (y * 1000000) |> int64
+        (blankCols |> Seq.where(fun col -> col < x) |> Seq.length) * 999999 + x |> int64,
+        (blankRows |> Seq.where(fun row -> row < y) |> Seq.length) * 999999 + y |> int64
         )
     |> List.ofSeq
-    |> distances64
+    |> distances
     |> sprintf "%i"
 
 module Tests =
     let private tests = 
         [
             fun () -> 
-                [(1,2);(3,1)]
-                |> distances
-                |> function | 3 -> Ok () | other -> Error $"Expected 3 got {other}"
+                distances [(1L,2L);(3L,1L)]
+                |> function | 3L -> Ok () | other -> Error $"Expected 3 got {other}"
             fun () -> 
-                [(1,2);(3,1);(0,0)]
+                [(1L,2L);(3L,1L);(0L,0L)]
                 |> distances
-                |> function | 10 -> Ok () | other -> Error $"Expected 10 got {other}"
+                |> function | 10L -> Ok () | other -> Error $"Expected 10 got {other}"
         ]
     let run () =
         tests 
