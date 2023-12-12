@@ -94,7 +94,63 @@ let part1 (input: Map<(int*int),char>) =
     |> Option.defaultValue "No paths found" 
 
 let part2 input = 
-    "todo"
+    let canGo direction pos : (int*int) option =
+        let maybeStep = step direction pos
+        Map.tryFind maybeStep input
+        |> Option.map (fun c ->
+            match direction  with
+            | Up ->
+                Seq.contains input[pos] [|'S';'|';'J';'L'|] &&
+                Seq.contains c [|'S';'|';'7';'F'|]
+            | Down ->
+                Seq.contains input[pos] [|'S';'|';'7';'F'|] &&
+                Seq.contains c [|'S';'|';'J';'L'|]
+            | Left ->
+                Seq.contains input[pos] [|'S';'-';'J';'7'|] &&
+                Seq.contains c [|'S';'-';'L';'F'|]
+            | Right ->
+                Seq.contains input[pos] [|'S';'-';'L';'F'|] &&
+                Seq.contains c [|'S';'-';'J';'7'|])
+
+        |>> fun x -> (x, maybeStep)
+        >>= Option.ofPair
+
+    let possibleSteps pos =
+        [ Up;Down;Left;Right]
+        |> List.choose (fun d -> canGo d pos)
+        
+    let startPos = input |> Map.findKey (fun _ c -> c = 'S' )
+
+    let rec createpath pos prevPos path =
+        if List.contains pos path then Some path
+        else
+            match prevPos with
+            | Some prevPos ->
+                possibleSteps pos
+                |> List.where (fun p -> p <> prevPos)
+                |> function
+                | [] -> None
+                | head::tail -> createpath head (Some pos) (pos::path)
+            | None ->
+                possibleSteps pos
+                |> List.pick (fun next -> createpath next (Some pos) (pos::path))
+                |> Some
+            
+    createpath startPos None []
+    |> function
+    | Some path ->
+        path
+        |> List.mapi (fun i (x,y) ->
+            let next = (i + 1) % List.length path
+            x * (snd path[next]) - (fst path[next]) * y
+        )
+        |> List.sum
+        |> abs
+        |> fun i -> (i - List.length path) /2 + 1
+        |> sprintf "%i"
+    | None -> "Error! no path found"
+
+
 
 module Tests =
     let private tests = 
