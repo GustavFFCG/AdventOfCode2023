@@ -32,48 +32,81 @@ let isHorizontalReflectionBelow (pattern: char array2d) i =
     let height = Array2D.length1 pattern
     seq{0..(Math.Min(i,height - 2 - i ))}
     |> Seq.exists (fun row ->
-        let s1 = String.ofArray pattern[i - row,*]
-        let s2 = String.ofArray pattern[i + 1 + row, *]
+        let s1 = pattern[i - row,*]
+        let s2 = pattern[i + 1 + row, *]
         s1 <> s2
         )
     |> not
 
-let findHorizontalReflection (pattern: char array2d) =
+let isSmudgedHorizontalReflectionBelow (pattern: char array2d) i =
+    let height = Array2D.length1 pattern
+    seq{0..(Math.Min(i,height - 2 - i ))}
+    |> Seq.sumBy (fun row ->
+        let s1 = pattern[i - row,*]
+        let s2 = pattern[i + 1 + row, *]
+        Seq.map2 (<>) s1 s2
+        |> Seq.where id
+        |> Seq.length
+        )
+    |> ((=) 1)
+
+let findHorizontalReflection (checker:(char array2d -> int -> bool)) (pattern: char array2d) =
     seq{0..(Array2D.length1 pattern - 2)}
-    |> Seq.tryFind (isHorizontalReflectionBelow pattern)
+    |> Seq.tryFind (checker pattern)
     |>> (+) 1
 
 let isVerticalReflectionRightOf (pattern: char array2d) i =
     let width = Array2D.length2 pattern
     seq{0..(Math.Min(i,width - 2 - i ))}
     |> Seq.exists (fun col ->
-        let s1 = String.ofArray pattern[*,i - col]
-        let s2 = String.ofArray pattern[*,i + 1 + col]
+        let s1 = pattern[*,i - col]
+        let s2 = pattern[*,i + 1 + col]
         s1 <> s2
         )
     |> not
 
-let findVerticalReflection (pattern: char array2d) =
+let isSmudgedVerticalReflectionRightOf (pattern: char array2d) i =
+    let width = Array2D.length2 pattern
+    seq{0..(Math.Min(i,width - 2 - i ))}
+    |> Seq.sumBy (fun col ->
+        let s1 = pattern[*,i - col]
+        let s2 = pattern[*,i + 1 + col]
+        Seq.map2 (<>) s1 s2
+        |> Seq.where id
+        |> Seq.length
+        )
+    |> ((=) 1)
+
+let findVerticalReflection (checker:(char array2d -> int -> bool)) (pattern: char array2d) =
     seq{0..(Array2D.length2 pattern - 2)}
-    |> Seq.tryFind (isVerticalReflectionRightOf pattern)
+    |> Seq.tryFind (checker pattern)
     |>> (+) 1
 
 let part1 (input: char array2d seq)  =
-    Console.WriteLine $"Checking{Seq.length input} patterns"
     input
     |>> (fun pattern -> 
-        findHorizontalReflection pattern
+        findHorizontalReflection isHorizontalReflectionBelow pattern
         |> function
         | Some r -> Horizontal r
         | None -> 
-            findVerticalReflection pattern |>> Vertical
+            findVerticalReflection isVerticalReflectionRightOf pattern |>> Vertical
             |> Option.defaultWith (fun () -> failwith "Neither")
     )
     |> Seq.sumBy (function | Vertical x -> x | Horizontal x -> 100 * x )
     |> sprintf "%i"
 
 let part2 input = 
-    "todo"
+    input
+    |>> (fun pattern -> 
+        findHorizontalReflection isSmudgedHorizontalReflectionBelow pattern
+        |> function
+        | Some r -> Horizontal r
+        | None -> 
+            findVerticalReflection isSmudgedVerticalReflectionRightOf pattern |>> Vertical
+            |> Option.defaultWith (fun () -> failwith "Neither")
+    )
+    |> Seq.sumBy (function | Vertical x -> x | Horizontal x -> 100 * x )
+    |> sprintf "%i"
 
 module Tests =
     let private tests = 
