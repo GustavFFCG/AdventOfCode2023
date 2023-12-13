@@ -13,6 +13,9 @@ let fileName =
     | _::s::_ -> Some s 
     | _ -> None
 
+type Reflection = 
+    | Horizontal of int
+    | Vertical of int
 let pattern (rows: string seq) =
     array2D rows
 
@@ -25,11 +28,50 @@ let readFile fileName =
     with
         ex -> Error $"Could not read file '%s{fileName}': %s{ex.Message}" 
 
-let isHorizontalReflection (pattern: char array2d) i =
-    
+let isHorizontalReflectionBelow (pattern: char array2d) i =
+    let height = Array2D.length1 pattern
+    seq{0..(Math.Min(i,height - 2 - i ))}
+    |> Seq.exists (fun row ->
+        let s1 = String.ofArray pattern[i - row,*]
+        let s2 = String.ofArray pattern[i + 1 + row, *]
+        s1 <> s2
+        )
+    |> not
+
+let findHorizontalReflection (pattern: char array2d) =
+    seq{0..(Array2D.length1 pattern - 2)}
+    |> Seq.tryFind (isHorizontalReflectionBelow pattern)
+    |>> (+) 1
+
+let isVerticalReflectionRightOf (pattern: char array2d) i =
+    let width = Array2D.length2 pattern
+    seq{0..(Math.Min(i,width - 2 - i ))}
+    |> Seq.exists (fun col ->
+        let s1 = String.ofArray pattern[*,i - col]
+        let s2 = String.ofArray pattern[*,i + 1 + col]
+        s1 <> s2
+        )
+    |> not
+
+let findVerticalReflection (pattern: char array2d) =
+    seq{0..(Array2D.length2 pattern - 2)}
+    |> Seq.tryFind (isVerticalReflectionRightOf pattern)
+    |>> (+) 1
+
 let part1 (input: char array2d seq)  =
     Console.WriteLine $"Checking{Seq.length input} patterns"
-    "todo"
+    input
+    |>> (fun pattern -> 
+        findHorizontalReflection pattern
+        |> function
+        | Some r -> Horizontal r
+        | None -> 
+            findVerticalReflection pattern |>> Vertical
+            |> Option.defaultWith (fun () -> failwith "Neither")
+    )
+    |> Seq.sumBy (function | Vertical x -> x | Horizontal x -> 100 * x )
+    |> sprintf "%i"
+
 let part2 input = 
     "todo"
 
